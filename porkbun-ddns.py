@@ -8,17 +8,31 @@ def getRecords(domain): #grab all the records so we know which ones to delete to
 	if allRecords["status"]=="ERROR":
 		print('Error getting domain. Check to make sure you specified the correct domain, and that API access has been switched on for this domain.');
 		sys.exit();
-	return(allRecords)
+	return(allRecords) 
 	
 def getMyIP():
 	ping = json.loads(requests.post(apiConfig["endpoint"] + '/ping/', data = json.dumps(apiConfig)).text)
 	return(ping["yourIp"])
 
-def deleteRecord():
+def checkRecord():
 	for i in getRecords(rootDomain)["records"]:
 		if i["name"]==fqdn and (i["type"] == 'A' or i["type"] == 'ALIAS' or i["type"] == 'CNAME'):
-			print("Deleting existing " + i["type"] + " Record")
-			deleteRecord = json.loads(requests.post(apiConfig["endpoint"] + '/dns/delete/' + rootDomain + '/' + i["id"], data = json.dumps(apiConfig)).text)
+			print("Found existing " + i["type"] + " record")
+			if myIP == i["content"]:
+				print("Record matches current WAN IP")
+				return({'status': 'SKIPPED'})
+			print("Current record IP (" + i["content"] + ") does not match WAN IP (" + myIP + ")")
+			return(editRecord(i))
+	print("No existing record for " + fqdn)
+	return(createRecord())
+
+def editRecord(record):
+	editObj=apiConfig.copy()
+	editObj.update({'name': subDomain, 'type': 'A', 'content': myIP, 'ttl': 300})
+	endpoint = apiConfig["endpoint"] + '/dns/edit/' + rootDomain
+	print("Setting record: " + fqdn + " to " + myIP)
+	edit = json.loads(requests.post(apiConfig["endpoint"] + '/dns/edit/' + rootDomain + '/' + record["id"], data = json.dumps(editObj)).text)
+	return(edit)
 
 def createRecord():
 	createObj=apiConfig.copy()
@@ -46,8 +60,8 @@ if len(sys.argv)>2: #at least the config and root domain is specified
 	else:
 		myIP=getMyIP() #otherwise use the detected exterior IP address
 	
-	deleteRecord()
-	print(createRecord()["status"])
+	#deleteRecord()
+	print(checkRecord()["status"])
 	
 else:
 	print("Porkbun Dynamic DNS client, Python Edition\n\nError: not enough arguments. Examples:\npython porkbun-ddns.py /path/to/config.json example.com\npython porkbun-ddns.py /path/to/config.json example.com www\npython porkbun-ddns.py /path/to/config.json example.com '*'\npython porkbun-ddns.py /path/to/config.json example.com -i 10.0.0.1\n")
