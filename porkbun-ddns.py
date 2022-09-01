@@ -60,7 +60,6 @@ if len(sys.argv)>2: #at least the config and root domain is specified
 	else:
 		myIP=getMyIP() #otherwise use the detected exterior IP address
 	
-	#deleteRecord()
 	print(checkRecord()["status"])
 	
 else:
