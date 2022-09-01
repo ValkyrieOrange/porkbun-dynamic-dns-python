@@ -1,3 +1,5 @@
+Modification of porkbundomains dynamic dns repo to only edit records instead of delete and create. It will still create a record if one doesn't exist.
+
 # porkbun-dynamic-dns-python
 
 Our minimalist dynamic DNS client. Compatible with both Python 2 or 3 so it runs on MacOS without any additional software to install, or any other platform that supports Python.
